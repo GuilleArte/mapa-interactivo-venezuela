@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapa Interactivo de Venezuela | Cuestionario Geográfico</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Barra Superior / Header -->
+        <header class="app-header">
+            <div class="brand">
+                <div class="flag-icon">
+                    <span class="stripe yellow"></span>
+                    <span class="stripe blue">
+                        <span class="stars">★★★</span>
+                    </span>
+                    <span class="stripe red"></span>
+                </div>
+                <div class="brand-text">
+                    <h1>Venezuela <span>Interactiva</span></h1>
+                    <p class="tagline">Geografía • Capitales • Economía Primaria</p>
+                </div>
+            </div>
+
+            <!-- Modos y Controles Superiores -->
+            <div class="header-controls">
+                <div class="mode-switch">
+                    <button id="btn-mode-quiz" class="mode-btn active">
+                        <span class="btn-icon">🎯</span>
+                        <span>Cuestionario</span>
+                    </button>
+                    <button id="btn-mode-explore" class="mode-btn">
+                        <span class="btn-icon">🔍</span>
+                        <span>Modo Explorar</span>
+                    </button>
+                </div>
+
+                <div class="action-buttons">
+                    <button id="btn-sound" class="icon-btn" title="Silenciar / Activar Sonido">
+                        <span id="sound-icon">🔊</span>
+                    </button>
+                    <button id="btn-toggle-labels" class="icon-btn" title="Mostrar / Ocultar Nombres">
+                        <span id="labels-icon">🏷️</span>
+                    </button>
+                    <button id="btn-info" class="icon-btn" title="Información y Reglas">
+                        <span>ℹ️</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Barra de Estado / Puntuación (durante Cuestionario) -->
+        <section id="quiz-status-bar" class="quiz-status-bar">
+            <div class="stat-card">
+                <span class="stat-label">Pregunta</span>
+                <span id="stat-progress" class="stat-value">1 / 10</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Puntaje</span>
+                <span id="stat-score" class="stat-value text-accent">0</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Racha</span>
+                <span id="stat-streak" class="stat-value text-streak">🔥 0</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Aciertos</span>
+                <span id="stat-accuracy" class="stat-value">100%</span>
+            </div>
+        </section>
+
+        <!-- Contenido Principal: Mapa + Panel Lateral -->
+        <main class="main-layout">
+            <!-- Columna del Mapa SVG -->
+            <div class="map-viewport-wrapper">
+                <!-- Controles Flotantes del Mapa -->
+                <div class="map-overlay-controls">
+                    <button id="btn-zoom-in" class="map-ctrl-btn" title="Acercar">+</button>
+                    <button id="btn-zoom-out" class="map-ctrl-btn" title="Alejar">−</button>
+                    <button id="btn-zoom-reset" class="map-ctrl-btn" title="Restablecer Vista">⟲</button>
+                </div>
+
+                <!-- Notificación / Toast Flotante sobre el Mapa -->
+                <div id="map-toast" class="map-toast">
+                    <span id="toast-text">Haz clic en el estado correcto</span>
+                </div>
+
+                <!-- SVG Container -->
+                <div id="svg-pan-container" class="svg-container">
+                    <svg id="venezuela-svg" viewBox="0 0 1000 760" preserveAspectRatio="xMidYMid meet">
+                        <!-- Filtros y Sombras SVG -->
+                        <defs>
+                            <filter id="glow-gold" x="-20%" y="-20%" width="140%" height="140%">
+                                <feGaussianBlur stdDeviation="6" result="blur" />
+                                <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                            </filter>
+                            <filter id="glow-green" x="-20%" y="-20%" width="140%" height="140%">
+                                <feGaussianBlur stdDeviation="8" result="blur" />
+                                <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                            </filter>
+                            <linearGradient id="oceanGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#091b2e" />
+                                <stop offset="100%" stop-color="#0c253f" />
+                            </linearGradient>
+                            <pattern id="diagonalHatch" width="10" height="10" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
+                                <line x1="0" y1="0" x2="0" y2="10" stroke="rgba(255,255,255,0.18)" stroke-width="1.8" />
+                            </pattern>
+                        </defs>
+
+                        <!-- Fondo Océano / Mar Caribe y Límites -->
+                        <rect width="100%" height="100%" fill="url(#oceanGrad)" class="ocean-bg" />
+                        
+                        <!-- Marcas decorativas náuticas y nombres de masas de agua -->
+                        <text x="350" y="45" class="water-label">MAR CARIBE</text>
+                        <text x="830" y="140" class="water-label">OCÉANO ATLÁNTICO</text>
+
+                        <!-- Capa de Caminos de Estados -->
+                        <g id="states-group" class="states-group"></g>
+
+                        <!-- Capa de Etiquetas de Nombres de Estados -->
+                        <g id="labels-group" class="labels-group"></g>
+
+                        <!-- Capa de Marcadores y Pines -->
+                        <g id="pins-group" class="pins-group"></g>
+                    </svg>
+                </div>
+
+                <!-- Leyenda del Mapa Térmico de Venezuela -->
+                <div class="map-temp-legend">
+                    <div class="temp-legend-header">
+                        <span class="temp-title">🌡️ Mapa Térmico de Venezuela</span>
+                        <span class="temp-sub">Blanco: Frío • Naranja: Cálido</span>
+                    </div>
+                    <div class="temp-gradient-bar"></div>
+                    <div class="temp-legend-labels">
+                        <span class="temp-lbl cold">❄️ Frío (14°C)</span>
+                        <span class="temp-lbl mild">22°C</span>
+                        <span class="temp-lbl warm">28°C</span>
+                        <span class="temp-lbl hot">🔥 Cálido (34°C)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Columna del Panel de Juego / Información -->
+            <aside class="panel-wrapper">
+                <!-- VISTA 1: PANTALLA DE INICIO DEL CUESTIONARIO -->
+                <div id="quiz-start-card" class="card active">
+                    <div class="card-hero">
+                        <span class="hero-badge">🎓 Reto Geográfico</span>
+                        <h2>¡Pon a prueba tus conocimientos sobre Venezuela!</h2>
+                        <p class="hero-desc">
+                            En cada ronda deberás superar 3 desafíos sobre cada estado:
+                        </p>
+                    </div>
+
+                    <div class="quiz-steps-preview">
+                        <div class="step-preview-item">
+                            <span class="step-num">1</span>
+                            <div class="step-desc">
+                                <strong>Ubicar en el Mapa</strong>
+                                <span>¿Dónde está el estado seleccionado?</span>
+                            </div>
+                        </div>
+                        <div class="step-preview-item">
+                            <span class="step-num">2</span>
+                            <div class="step-desc">
+                                <strong>Identificar la Capital</strong>
+                                <span>¿Cuál es su ciudad capital?</span>
+                            </div>
+                        </div>
+                        <div class="step-preview-item">
+                            <span class="step-num">3</span>
+                            <div class="step-desc">
+                                <strong>Producción Específica</strong>
+                                <span>¿Qué produce en Ganadería, Pesca y Agricultura?</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="quiz-config">
+                        <label for="quiz-length-select">Cantidad de estados por partida:</label>
+                        <div class="custom-select-wrapper">
+                            <select id="quiz-length-select">
+                                <option value="5">Rápida (5 estados)</option>
+                                <option value="10" selected>Estándar (10 estados)</option>
+                                <option value="24">Desafío Completo (Los 24 estados)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <button id="btn-start-quiz" class="btn-primary-glow">
+                        <span class="btn-text">¡Comenzar Cuestionario!</span>
+                        <span class="btn-arrow">🚀</span>
+                    </button>
+                </div>
+
+                <!-- VISTA 2: CUESTIONARIO EN CURSO -->
+                <div id="quiz-active-card" class="card" style="display: none;">
+                    <!-- Paso 1: Ubicación en el Mapa -->
+                    <div id="quiz-phase-map" class="quiz-phase active">
+                        <div class="phase-header">
+                            <span class="phase-badge step-1">PASO 1 DE 3 • UBICACIÓN</span>
+                            <h3 class="phase-question">
+                                ¿Dónde está <span id="target-state-name" class="highlight-target">...</span>?
+                            </h3>
+                            <p class="phase-instruction">
+                                👆 Haz clic sobre el estado en el mapa para seleccionarlo.
+                            </p>
+                        </div>
+
+                        <div class="target-hint-box">
+                            <div class="hint-icon">💡</div>
+                            <div class="hint-text">
+                                <span class="hint-title">Pista Regional:</span>
+                                <span id="target-state-region">Región...</span>
+                            </div>
+                        </div>
+
+                        <div id="map-feedback" class="feedback-box">
+                            <!-- Feedback dinámico (correcto / error) -->
+                        </div>
+                    </div>
+
+                    <!-- Paso 2: ¿Cuál es la capital? -->
+                    <div id="quiz-phase-capital" class="quiz-phase" style="display: none;">
+                        <div class="phase-header">
+                            <span class="phase-badge step-2">PASO 2 DE 3 • CAPITAL</span>
+                            <h3 class="phase-question">
+                                ¿Cuál es la capital de <span id="capital-target-state" class="highlight-target">...</span>?
+                            </h3>
+                            <p class="phase-instruction">
+                                Selecciona la opción correcta:
+                            </p>
+                        </div>
+
+                        <div id="capital-options-container" class="options-grid">
+                            <!-- Botones generados dinámicamente -->
+                        </div>
+
+                        <div id="capital-feedback" class="feedback-box"></div>
+                    </div>
+
+                    <!-- Paso 3: ¿Qué produce en Agricultura, Pesca y Ganadería? -->
+                    <div id="quiz-phase-economy" class="quiz-phase" style="display: none;">
+                        <div class="phase-header">
+                            <div class="production-stepper">
+                                <span id="step-pill-agri" class="prod-pill active">🌾 1. Agricultura</span>
+                                <span id="step-pill-fish" class="prod-pill">🐟 2. Pesca</span>
+                                <span id="step-pill-live" class="prod-pill">🐄 3. Ganadería</span>
+                            </div>
+                            <h3 class="phase-question" id="production-question-title">
+                                ¿Qué produce <span id="economy-target-state" class="highlight-target">...</span> en <span id="production-category-title" class="text-accent">Agricultura</span>?
+                            </h3>
+                            <p class="phase-instruction" id="production-instruction">
+                                🎯 Arrastra su cesta a la zona de confirmación o haz clic:
+                            </p>
+                        </div>
+
+                        <!-- Área interactiva: 6 opciones con imágenes reales + Zona de Confirmación -->
+                        <div class="production-interactive-area">
+
+                            <!-- 6 Tarjetas con sus ambientes temáticos (fresa en cesta congelada, etc.) -->
+                            <div id="production-items-grid" class="production-items-grid"></div>
+
+                            <!-- Zona de Confirmación (Drop Zone) -->
+                            <div id="drop-confirm-zone" class="drop-confirm-zone" tabindex="0">
+                                <div class="drop-zone-border-glow"></div>
+                                <div class="drop-zone-content">
+                                    <div class="drop-zone-icon" id="drop-zone-icon">🎯</div>
+                                    <div class="drop-zone-text">
+                                        <strong id="drop-zone-title">Zona de Confirmación</strong>
+                                        <span id="drop-zone-sub">Suelta aquí el producto característico de este estado</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="economy-feedback" class="feedback-box"></div>
+
+                        <!-- Resumen didáctico de las 3 áreas al culminar la ronda -->
+                        <div id="production-summary-box" class="production-summary-card" style="display: none;">
+                            <div class="prod-summary-header">
+                                <span class="summary-check">✅</span>
+                                <h4>Ficha Productiva del Estado</h4>
+                            </div>
+                            <div class="prod-summary-grid">
+                                <div class="prod-sum-item">
+                                    <span class="sum-tag">🌾 Agricultura</span>
+                                    <strong id="sum-agri-val">...</strong>
+                                </div>
+                                <div class="prod-sum-item">
+                                    <span class="sum-tag">🐟 Pesca</span>
+                                    <strong id="sum-fish-val">...</strong>
+                                </div>
+                                <div class="prod-sum-item">
+                                    <span class="sum-tag">🐄 Ganadería</span>
+                                    <strong id="sum-live-val">...</strong>
+                                </div>
+                            </div>
+                            <p id="sum-detail-text" class="prod-sum-detail">...</p>
+                        </div>
+
+                        <!-- Botón para avanzar a la siguiente pregunta -->
+                        <button id="btn-next-question" class="btn-primary-glow" style="display: none; margin-top: 15px;">
+                            <span>Siguiente Estado</span>
+                            <span>➡️</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- VISTA 3: RESUMEN FINAL AL TERMINAR -->
+                <div id="quiz-results-card" class="card" style="display: none;">
+                    <div class="results-header">
+                        <span id="results-medal" class="results-medal">🏆</span>
+                        <h2 id="results-title">¡Cuestionario Completado!</h2>
+                        <p id="results-subtitle">Gran demostración de conocimientos sobre Venezuela.</p>
+                    </div>
+
+                    <div class="results-stats-grid">
+                        <div class="res-stat-item">
+                            <span class="res-label">Puntos Totales</span>
+                            <span id="res-score" class="res-val text-accent">0</span>
+                        </div>
+                        <div class="res-stat-item">
+                            <span class="res-label">Precisión</span>
+                            <span id="res-accuracy" class="res-val">100%</span>
+                        </div>
+                        <div class="res-stat-item">
+                            <span class="res-label">Mejor Racha</span>
+                            <span id="res-streak" class="res-val text-streak">🔥 0</span>
+                        </div>
+                        <div class="res-stat-item">
+                            <span class="res-label">Estados Vistos</span>
+                            <span id="res-count" class="res-val">10</span>
+                        </div>
+                    </div>
+
+                    <div id="results-rank-badge" class="rank-badge">
+                        Maestro Geógrafo de Venezuela
+                    </div>
+
+                    <div class="results-actions">
+                        <button id="btn-restart-quiz" class="btn-primary-glow">
+                            <span>Jugar Nuevamente</span>
+                            <span>🔄</span>
+                        </button>
+                        <button id="btn-explore-after-quiz" class="btn-secondary">
+                            <span>Explorar el Mapa</span>
+                            <span>🗺️</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- VISTA 4: MODO EXPLORAR (INFORMACIÓN AL CLICAR) -->
+                <div id="explore-card" class="card" style="display: none;">
+                    <div class="explore-empty-state" id="explore-empty-prompt">
+                        <div class="explore-icon">🗺️</div>
+                        <h3>Modo Exploración Libre</h3>
+                        <p>Pasa el ratón o haz clic sobre cualquier estado de Venezuela para descubrir su capital, ubicación y actividad económica.</p>
+                        <div class="explore-shortcut-list">
+                            <span class="badge-hint">💡 23 Estados</span>
+                            <span class="badge-hint">💡 Distrito Capital</span>
+                            <span class="badge-hint">💡 Guayana Esequiba</span>
+                        </div>
+                    </div>
+
+                    <div id="explore-details" class="explore-details" style="display: none;">
+                        <div class="state-detail-header">
+                            <span id="exp-icon" class="state-icon">📍</span>
+                            <div>
+                                <h2 id="exp-name">Zulia</h2>
+                                <span id="exp-region" class="state-sub">Región Zuliana</span>
+                            </div>
+                        </div>
+
+                        <div class="info-tile">
+                            <span class="tile-label">🏛️ Capital Oficial</span>
+                            <span id="exp-capital" class="tile-val">Maracaibo</span>
+                        </div>
+
+                        <div class="explore-productions-grid">
+                            <div class="prod-tile">
+                                <span class="tile-label">🌾 Agricultura</span>
+                                <span id="exp-agri" class="tile-val-sm">Plátano, palma aceitera...</span>
+                            </div>
+                            <div class="prod-tile">
+                                <span class="tile-label">🐟 Pesca</span>
+                                <span id="exp-fish" class="tile-val-sm">Cangrejo azul y camarón...</span>
+                            </div>
+                            <div class="prod-tile">
+                                <span class="tile-label">🐄 Ganadería</span>
+                                <span id="exp-live" class="tile-val-sm">Ganado vacuno (carne y leche)...</span>
+                            </div>
+                        </div>
+
+                        <div class="info-description">
+                            <span class="tile-label">📖 Perfil Geográfico y Económico</span>
+                            <p id="exp-detail">
+                                Gran descripción sobre la economía agropecuaria del estado.
+                            </p>
+                        </div>
+
+                        <button id="btn-quiz-this-state" class="btn-secondary" style="margin-top: 15px; width: 100%;">
+                            <span>Poner a prueba este estado en el Cuestionario</span>
+                        </button>
+                    </div>
+                </div>
+            </aside>
+        </main>
+    </div>
+
+    <!-- Tooltip Flotante para el Mapa -->
+    <div id="map-tooltip" class="map-tooltip"></div>
+
+    <!-- Modal Informativo / Reglas -->
+    <div id="info-modal" class="modal-backdrop">
+        <div class="modal-dialog">
+            <button id="btn-close-modal" class="modal-close">&times;</button>
+            <div class="modal-header">
+                <h3>🇻🇪 Sobre el Mapa de Venezuela y Actividades Primarias</h3>
+            </div>
+            <div class="modal-body">
+                <p>
+                    Esta aplicación educativa e interactiva te enseña la geografía política y la economía primaria de Venezuela a través de un juego en 3 pasos:
+                </p>
+                <ol class="modal-steps-list">
+                    <li><strong>Ubicación Geográfica:</strong> Identifica el contorno del estado solicitado haciéndole clic directamente en el mapa.</li>
+                    <li><strong>Capital Político-Territorial:</strong> Elige la capital correspondiente de entre 4 opciones.</li>
+                    <li><strong>Economía Primaria:</strong> Selecciona cuál de las tres ramas (Agricultura, Pesca o Ganadería) es la más destacada y representativa en dicho estado.</li>
+                </ol>
+                <p class="modal-note">
+                    <strong>Categorías económicas primarias:</strong><br>
+                    • 🌾 <strong>Agricultura:</strong> Estados como Portuguesa (el "Granero de Venezuela"), Guárico (arroz), Mérida y Trujillo (hortalizas y papas), Yaracuy (cítricos), Miranda y Aragua (cacao).<br>
+                    • 🐟 <strong>Pesca:</strong> Estados marítimos o fluviales como Sucre (primer productor pesquero y atunero), Nueva Esparta, Falcón, Delta Amacuro y La Guaira.<br>
+                    • 🐄 <strong>Ganadería:</strong> Zulia (mayor productor de leche, carne y queso), Apure, Barinas, Cojedes y Anzoátegui (ganadería extensiva).
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Canvas de Confeti -->
+    <canvas id="confetti-canvas"></canvas>
+
+    <!-- Scripts -->
+    <script src="map-data.js"></script>
+    <script src="cartoon-assets.js"></script>
+    <script src="quiz.js"></script>
+</body>
+</html>
+
